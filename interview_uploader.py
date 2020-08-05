@@ -1,0 +1,232 @@
+import sys
+import redcap
+import requests
+import pandas as pd
+from PyQt5.QtWidgets import *
+from PyQt5 import QtCore, QtGui
+
+
+class Window(QWidget):
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Interview Uploader")
+        self.setGeometry(200, 200, 300, 300)
+        self.UI()
+
+    def UI(self):
+        # masi lab logo
+        self.masi_label = QLabel(self)
+        self.masi_label.setGeometry(QtCore.QRect(180, 180, 130, 130))
+        pixmap = QtGui.QPixmap('/Users/kanakap/Downloads/masi.jpg')
+        self.masi_label.setPixmap(pixmap.scaled(75, 75, QtCore.Qt.KeepAspectRatio))
+
+        # set labels for the text boxes
+        self.label_1 = QLabel("Participant ID", self)
+        self.label_1.move(50, 30)
+
+        self.label_2 = QLabel("Visit", self)
+        self.label_2.move(50, 70)
+
+
+        self.label_3 = QLabel("Interview File", self)
+        self.label_3.move(50, 105)
+
+        # text boxes for participant and visit
+        self.nameTextbox = QLineEdit(self)
+        self.nameTextbox.move(150, 30)
+
+        # self.passTextbox = QLineEdit(self)
+        # self.passTextbox.move(150, 70)
+        self.dropdown = QComboBox(self)
+        self.dropdown.addItem("Visit 1")
+        self.dropdown.addItem("Visit 2")
+        self.dropdown.addItem("Visit 3")
+        self.dropdown.addItem("Visit 4")
+        self.dropdown.addItem("Extra Visit 1")
+        self.dropdown.addItem("Extra Visit 2")
+        self.dropdown.addItem("Extra Visit 3")
+        self.dropdown.addItem("Extra Visit 4")
+        self.dropdown.addItem("Extra Visit 5")
+        self.dropdown.move(150, 70)
+
+        # push button to browse file
+        # self.pushButton = QPushButton("Browse File", self)
+        # self.pushButton.move(150, 100)
+        # self.excel_path = ''
+        # self.pushButton.clicked.connect(self.pushButton_handler)
+
+        # self.select_image_label = QLabel(self)
+        # self.select_image_label.setObjectName("bubble_para")
+        # self.select_image_label.setText("Choose Image")
+        # self.select_image_label.move(30, 50)
+
+        self.image_path = QLineEdit(self)
+        self.image_path.setObjectName("path_text")
+        self.image_path.move(150, 105)
+
+        self.browse_button = QPushButton(self)
+        self.browse_button.setText("...")
+        self.browse_button.setObjectName("browse_button")
+        self.browse_button.clicked.connect(self.pushButton_handler)
+        self.browse_button.move(240, 125)
+
+
+        # push button to upload to redcap
+        self.button = QPushButton("Upload to REDCap", self)
+        self.button.move(90, 150)
+
+        self.openedwin = []
+        self.button.clicked.connect(self.save)
+
+        self.show()
+
+    def onChanged(self):
+        print((self.comboBox.currentText(), self.comboBox.currentIndex()))
+
+    def pushButton_handler(self):
+        print("Button pressed")
+        self.excel_path = self.open_dialog_box()
+        print(self.excel_path)
+
+    def open_dialog_box(self):
+        # filename = QFileDialog.getOpenFileName(self)
+        # path = filename[0]
+        # print(path)
+        # raw_excel = pd.read_excel(path, sheet_name=None)
+        options = QFileDialog.Options()
+        #options |= QFileDialog.DontUseNativeDialog
+        #fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+        #                                          "Excel Files (*.xlsx)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+                                                  "Excel Files (*.xlsx)", options=options)
+
+
+        if fileName:
+            print("lala", fileName)
+            self.image_path.setText(fileName)
+        return fileName
+
+
+    def save(self):
+        visit_dict = {"Visit 1": "visit_1_arm_1", "Visit 2": "visit_2_arm_1", "Visit 3": "vist_3_arm_1",
+                 "Visit 4": "visit_4_arm_1", "Extra Visit 1": "extra_visit_1_arm_1",
+                 "Extra Visit 2": "extra_visit_2_arm_1", "Extra Visit 3": "extra_visit_3_arm_1",
+                 "Extra Visit 4": "extra_visit_4_arm_1", "Extra Visit 5": "extra_visit_5_arm_1"}
+        participant_id = self.nameTextbox.text()
+        visit = visit_dict[self.dropdown.currentText()]
+        print(participant_id, visit)
+        print(self.excel_path)
+        interview_file = self.excel_path
+
+        # Message
+        self.msg = QMessageBox()
+        self.msg.setIcon(QMessageBox.Critical)
+        self.msg.setText("Error")
+        # Check if the file was selected
+        try:
+            fobj = open(interview_file, 'rb')
+        except FileNotFoundError:
+            print('File was not selected')
+            self.msg.setInformativeText('File not selected')
+            self.msg.setWindowTitle("Error")
+            self.msg.exec_()
+
+        # Asset the excel file
+        excel_data_df = pd.read_excel(interview_file)
+
+        # If the subject ID is not present
+        if not (excel_data_df['SubjectID'] == participant_id).any():
+            print('SubjectID not present')
+            self.msg.setInformativeText('The SubjectID given does not exists in Excel')
+            self.msg.setWindowTitle("Error")
+            self.msg.exec_()
+
+        # scoring values
+        p_values = excel_data_df[excel_data_df['SubjectID'] == participant_id].filter(regex='^P[0-9]').values
+        # ndarray -> list
+        p_values = [int(x) for x in p_values]
+        print(p_values)
+
+        # Throw errors an error each for wrong column headers
+        if excel_data_df.columns[0] != 'SubjectID':
+            self.msg.setInformativeText('Column 1 header should be SubjectID')
+            self.msg.setWindowTitle("Error")
+            self.msg.exec_()
+        elif excel_data_df.columns[1] != 'InterviewDate':
+            self.msg.setInformativeText('Column 2 header should be InterviewDate')
+            self.msg.setWindowTitle("Error")
+            self.msg.exec_()
+        elif excel_data_df.columns[2] != 'InterviewerName':
+            self.msg.setInformativeText('Column 3 header should be InterviewerName')
+            self.msg.setWindowTitle("Error")
+            self.msg.exec_()
+        elif excel_data_df.columns[3] != 'StudyName':
+            self.msg.setInformativeText('Column 4 header should be StudyName')
+            self.msg.setWindowTitle("Error")
+            self.msg.exec_()
+        elif excel_data_df.columns[4] != 'IsComplete':
+            self.msg.setInformativeText('Column 5 header should be IsComplete')
+            self.msg.setWindowTitle("Error")
+            self.msg.exec_()
+        # check if the scoring columns are present
+        elif len(p_values) == 0:
+            self.msg.setInformativeText('There are no scoring columns')
+            self.msg.setWindowTitle("Error")
+            self.msg.exec_()
+        # check if atleast one scoring values is present
+        elif (1 or 2 or 3) not in p_values:
+            self.msg.setInformativeText('There are no preferred values (1 or 2 or 3) in scoring columns')
+            self.msg.setWindowTitle("Error")
+            self.msg.exec_()
+        else:
+            print('The Excel file is in good format')
+            # Importing to REDCap
+            redcap_key_file = open("REDCAP_API_KEY.txt", "r")
+            redcap_key_file.seek(0, 0)
+            redcap_key = redcap_key_file.read().replace('\n', '')
+            proj = redcap.Project('https://redcap.vanderbilt.edu/api/', redcap_key)
+            print('Connected to REDCap')
+            print(str(visit))
+
+            # Check if the upload file/record exists on REDCap
+            try:
+                print('Check if the file exsits in REDCap')
+                proj.export_file(record=str(participant_id), field='upload', event=str(visit))
+                print('File exists on REDCap')
+                self.msg_warn = QMessageBox()
+                self.msg_warn.setIcon(QMessageBox.Warning)
+                self.msg_warn.setText("Warning")
+                self.msg.setInformativeText('Excel file already exists for this visit. Try a new SubjectID')
+                self.msg.setWindowTitle("Warning")
+                self.msg.exec_()
+
+            except requests.HTTPError:
+                print('Excel not in redcap')
+                # import record first
+                to_import = [{'subject_id': str(participant_id), 'redcap_event_name': str(visit),
+                              'einterview_record_complete': '1'}]
+                response = proj.import_records(to_import)
+                print('REDCap import record response', response)
+                # Upload file to REDCap
+                proj.import_file(record=str(participant_id), field='upload', event=str(visit),
+                                            fname=interview_file,
+                                            fobj=fobj)
+
+                # after file is uploaded change the status to complete
+                to_import = [{'subject_id': str(participant_id), 'redcap_event_name': str(visit),
+                              'einterview_record_complete': '2'}]
+                response = proj.import_records(to_import)
+                print('REDCap uploaded file response', response)
+
+
+def main():
+    App = QApplication(sys.argv)
+    window = Window()
+    sys.exit(App.exec_())
+
+
+if __name__ == '__main__':
+    main()
+
+
