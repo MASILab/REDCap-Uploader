@@ -187,7 +187,7 @@ class Window(QWidget):
                     else:
                         print('The Excel file is in good format')
                         # Importing to REDCap
-                        redcap_key_file = open("/Users/kanakap/PycharmProjects/3.6_REDCap_uploader/REDCAP_API_KEY.txt", "r")
+                        redcap_key_file = open("~/REDCAP_API_KEY.txt", "r")
                         redcap_key_file.seek(0, 0)
                         redcap_key = redcap_key_file.read().replace('\n', '')
                         proj = redcap.Project('https://redcap.vanderbilt.edu/api/', redcap_key)
