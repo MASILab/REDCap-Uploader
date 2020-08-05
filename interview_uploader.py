@@ -131,93 +131,102 @@ class Window(QWidget):
             self.msg.setInformativeText('File not selected')
             self.msg.setWindowTitle("Error")
             self.msg.exec_()
-
-        # Asset the excel file
-        excel_data_df = pd.read_excel(interview_file)
-
-        # If the subject ID is not present
-        if not (excel_data_df['SubjectID'] == participant_id).any():
-            print('SubjectID not present')
-            self.msg.setInformativeText('The SubjectID given does not exists in Excel')
-            self.msg.setWindowTitle("Error")
-            self.msg.exec_()
-
-        # scoring values
-        p_values = excel_data_df[excel_data_df['SubjectID'] == participant_id].filter(regex='^P[0-9]').values
-        # ndarray -> list
-        p_values = [int(x) for x in p_values]
-        print(p_values)
-
-        # Throw errors an error each for wrong column headers
-        if excel_data_df.columns[0] != 'SubjectID':
-            self.msg.setInformativeText('Column 1 header should be SubjectID')
-            self.msg.setWindowTitle("Error")
-            self.msg.exec_()
-        elif excel_data_df.columns[1] != 'InterviewDate':
-            self.msg.setInformativeText('Column 2 header should be InterviewDate')
-            self.msg.setWindowTitle("Error")
-            self.msg.exec_()
-        elif excel_data_df.columns[2] != 'InterviewerName':
-            self.msg.setInformativeText('Column 3 header should be InterviewerName')
-            self.msg.setWindowTitle("Error")
-            self.msg.exec_()
-        elif excel_data_df.columns[3] != 'StudyName':
-            self.msg.setInformativeText('Column 4 header should be StudyName')
-            self.msg.setWindowTitle("Error")
-            self.msg.exec_()
-        elif excel_data_df.columns[4] != 'IsComplete':
-            self.msg.setInformativeText('Column 5 header should be IsComplete')
-            self.msg.setWindowTitle("Error")
-            self.msg.exec_()
-        # check if the scoring columns are present
-        elif len(p_values) == 0:
-            self.msg.setInformativeText('There are no scoring columns')
-            self.msg.setWindowTitle("Error")
-            self.msg.exec_()
-        # check if atleast one scoring values is present
-        elif (1 or 2 or 3) not in p_values:
-            self.msg.setInformativeText('There are no preferred values (1 or 2 or 3) in scoring columns')
-            self.msg.setWindowTitle("Error")
-            self.msg.exec_()
         else:
-            print('The Excel file is in good format')
-            # Importing to REDCap
-            redcap_key_file = open("REDCAP_API_KEY.txt", "r")
-            redcap_key_file.seek(0, 0)
-            redcap_key = redcap_key_file.read().replace('\n', '')
-            proj = redcap.Project('https://redcap.vanderbilt.edu/api/', redcap_key)
-            print('Connected to REDCap')
-            print(str(visit))
+            # Asset the excel file
+            excel_data_df = pd.read_excel(interview_file)
 
-            # Check if the upload file/record exists on REDCap
-            try:
-                print('Check if the file exsits in REDCap')
-                proj.export_file(record=str(participant_id), field='upload', event=str(visit))
-                print('File exists on REDCap')
-                self.msg_warn = QMessageBox()
-                self.msg_warn.setIcon(QMessageBox.Warning)
-                self.msg_warn.setText("Warning")
-                self.msg.setInformativeText('Excel file already exists for this visit. Try a new SubjectID')
-                self.msg.setWindowTitle("Warning")
+            # Throw errors an error each for wrong column headers
+            if excel_data_df.columns[0] != 'SubjectID':
+                self.msg.setInformativeText('Column 1 header should be SubjectID')
+                self.msg.setWindowTitle("Error")
+                self.msg.exec_()
+            elif excel_data_df.columns[1] != 'InterviewDate':
+                self.msg.setInformativeText('Column 2 header should be InterviewDate')
+                self.msg.setWindowTitle("Error")
+                self.msg.exec_()
+            elif excel_data_df.columns[2] != 'InterviewerName':
+                self.msg.setInformativeText('Column 3 header should be InterviewerName')
+                self.msg.setWindowTitle("Error")
+                self.msg.exec_()
+            elif excel_data_df.columns[3] != 'StudyName':
+                self.msg.setInformativeText('Column 4 header should be StudyName')
+                self.msg.setWindowTitle("Error")
+                self.msg.exec_()
+            elif excel_data_df.columns[4] != 'IsComplete':
+                self.msg.setInformativeText('Column 5 header should be IsComplete')
+                self.msg.setWindowTitle("Error")
                 self.msg.exec_()
 
-            except requests.HTTPError:
-                print('Excel not in redcap')
-                # import record first
-                to_import = [{'subject_id': str(participant_id), 'redcap_event_name': str(visit),
-                              'einterview_record_complete': '1'}]
-                response = proj.import_records(to_import)
-                print('REDCap import record response', response)
-                # Upload file to REDCap
-                proj.import_file(record=str(participant_id), field='upload', event=str(visit),
-                                            fname=interview_file,
-                                            fobj=fobj)
+            # If the subject ID row is not present
+            elif not (excel_data_df['SubjectID'] == participant_id).any():
+                print('SubjectID not present')
+                self.msg.setInformativeText('The SubjectID given does not exists in Excel')
+                self.msg.setWindowTitle("Error")
+                self.msg.exec_()
 
-                # after file is uploaded change the status to complete
-                to_import = [{'subject_id': str(participant_id), 'redcap_event_name': str(visit),
-                              'einterview_record_complete': '2'}]
-                response = proj.import_records(to_import)
-                print('REDCap uploaded file response', response)
+            # If subject ID row present
+            elif (excel_data_df['SubjectID'] == participant_id).any():
+                # get scoring values
+                p_values = excel_data_df[excel_data_df['SubjectID'] == participant_id].filter(regex='^P[0-9]').values
+                # ndarray -> list
+                print(p_values)
+                print(p_values.size)
+                # check if the scoring columns are present
+                if p_values.size == 0:
+                    print('here')
+                    self.msg.setInformativeText('There are no scoring columns')
+                    self.msg.setWindowTitle("Error")
+                    self.msg.exec_()
+
+                # check if atleast one scoring values is present
+                elif p_values.size != 0:
+                    if (1 or 2 or 3 or float(1) or float(2) or float(3)) not in p_values:
+                        self.msg.setInformativeText('There are no preferred values (1 or 2 or 3) in scoring columns')
+                        self.msg.setWindowTitle("Error")
+                        self.msg.exec_()
+                    else:
+                        print('The Excel file is in good format')
+                        # Importing to REDCap
+                        redcap_key_file = open("/Users/kanakap/PycharmProjects/3.6_REDCap_uploader/REDCAP_API_KEY.txt", "r")
+                        redcap_key_file.seek(0, 0)
+                        redcap_key = redcap_key_file.read().replace('\n', '')
+                        proj = redcap.Project('https://redcap.vanderbilt.edu/api/', redcap_key)
+                        print('Connected to REDCap')
+                        print(str(visit))
+
+                        # Check if the upload file/record exists on REDCap
+                        try:
+                            print('Check if the file exsits in REDCap')
+                            proj.export_file(record=str(participant_id), field='upload', event=str(visit))
+                            print('File exists on REDCap')
+                            self.msg_warn = QMessageBox()
+                            self.msg_warn.setIcon(QMessageBox.Warning)
+                            self.msg_warn.setText("Warning")
+                            self.msg.setInformativeText('Excel file already exists for this visit. Try a new SubjectID')
+                            self.msg.setWindowTitle("Warning")
+                            self.msg.exec_()
+
+                        except requests.HTTPError:
+                            print('Excel not in redcap')
+                            # import record first
+                            to_import = [{'subject_id': str(participant_id), 'redcap_event_name': str(visit),
+                                          'einterview_record_complete': '1'}]
+                            response = proj.import_records(to_import)
+                            print('REDCap import record response', response)
+                            # Upload file to REDCap
+                            proj.import_file(record=str(participant_id), field='upload', event=str(visit),
+                                             fname=interview_file,
+                                             fobj=fobj)
+
+                            # after file is uploaded change the status to complete
+                            to_import = [{'subject_id': str(participant_id), 'redcap_event_name': str(visit),
+                                          'einterview_record_complete': '2'}]
+                            response = proj.import_records(to_import)
+                            print('REDCap uploaded file response', response)
+
+
+
+
 
 
 def main():
