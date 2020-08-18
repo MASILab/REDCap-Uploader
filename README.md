@@ -14,7 +14,11 @@ a) the required packages are xlrd, pandas, PyQt5, PyCap
 You can install it by 
 $ pip install xlrd pandas PyQt5 PyCap 
 
-b) The API KEY should be stored in ~/REDCAP_API_KEY.txt
+b) The required files are REDCAP_API_KEY.txt and masi.jpg
+
+
+To build application for Mac OS
+$ python setup.py bdist_mac --iconfile="upload.ics"
 
 Interview Uploader GUI 
 ![](/images/Uploader%20GUI.png)
