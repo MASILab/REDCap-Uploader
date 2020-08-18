@@ -37,7 +37,7 @@ class Window(QWidget):
         self.label_1 = QLabel("Participant ID", self)
         #self.label_1.setStyleSheet("font-size: 400%")
         self.label_1.setFont(QtGui.QFont('Laksaman', 15))
-        self.label_1.move(50, 30)
+        self.label_1.move(30, 30)
 
         self.label_2 = QLabel("Visit", self)
         self.label_2.setFont(QtGui.QFont('Laksaman', 15))
@@ -46,7 +46,7 @@ class Window(QWidget):
 
         self.label_3 = QLabel("Interview File", self)
         self.label_3.setFont(QtGui.QFont('Laksaman', 15))
-        self.label_3.move(50, 125)
+        self.label_3.move(30, 125)
 
         # text boxes for participant and visit
         self.nameTextbox = QLineEdit(self)
@@ -86,7 +86,7 @@ class Window(QWidget):
 
         self.image_path = QLabel(self)
         self.image_path.setObjectName("path_text")
-        self.image_path.move(250, 120)
+        self.image_path.move(237, 120)
 
         self.browse_button = QPushButton(self)
 
@@ -255,6 +255,12 @@ class Window(QWidget):
                                           'einterview_record_complete': '2'}]
                             response = proj.import_records(to_import)
                             print('REDCap uploaded file response', response)
+                            self.msg_info = QMessageBox()
+                            self.msg_info.setIcon(QMessageBox.Information)
+                            self.msg_info.setText("Information")
+                            self.msg_info.setInformativeText('Excel file has been uploaded to REDCap successfully')
+                            self.msg_info.setWindowTitle("Upload Complete")
+                            self.msg_info.exec_()
 
 
 
