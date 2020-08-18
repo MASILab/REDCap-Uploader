@@ -1,40 +1,57 @@
+#!/usr/bin/env python
+
 import sys
-import redcap
-import requests
 import pandas as pd
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui
+import redcap
 
+# print(sys.getrecursionlimit())   # recursionlimit before
+# # 1000
+# sys.setrecursionlimit(10000)
+# print(sys.getrecursionlimit())
 
 class Window(QWidget):
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Interview Uploader")
-        self.setGeometry(200, 200, 300, 300)
+        self.setGeometry(240, 240, 350, 350)
+        # masi logo in the background
+        # oImage = QtGui.QImage("/Users/kanakap/Downloads/masi_old1.png")
+        # sImage = oImage.scaled(QtCore.QSize(360, 360))
+        # palette = QtGui.QPalette()
+        # palette.setBrush(QtGui.QPalette.Window, QtGui.QBrush(sImage))
+        # self.setPalette(palette)
         self.UI()
 
     def UI(self):
-        # masi lab logo
+        #masi lab logo
         self.masi_label = QLabel(self)
-        self.masi_label.setGeometry(QtCore.QRect(180, 180, 130, 130))
-        pixmap = QtGui.QPixmap('/Users/kanakap/Downloads/masi.jpg')
+        self.masi_label.setGeometry(QtCore.QRect(250, 250, 70, 70))
+        #pixmap = QtGui.QPixmap('/Users/kanakap/Downloads/masi.jpg')
+        pixmap = QtGui.QPixmap('/Applications/InterviewUploader-0.1.app/Contents/Resources/masi.jpg')
         self.masi_label.setPixmap(pixmap.scaled(75, 75, QtCore.Qt.KeepAspectRatio))
 
         # set labels for the text boxes
         self.label_1 = QLabel("Participant ID", self)
+        #self.label_1.setStyleSheet("font-size: 400%")
+        self.label_1.setFont(QtGui.QFont('Laksaman', 15))
         self.label_1.move(50, 30)
 
         self.label_2 = QLabel("Visit", self)
-        self.label_2.move(50, 70)
+        self.label_2.setFont(QtGui.QFont('Laksaman', 15))
+        self.label_2.move(50, 80)
 
 
         self.label_3 = QLabel("Interview File", self)
-        self.label_3.move(50, 105)
+        self.label_3.setFont(QtGui.QFont('Laksaman', 15))
+        self.label_3.move(50, 125)
 
         # text boxes for participant and visit
         self.nameTextbox = QLineEdit(self)
-        self.nameTextbox.move(150, 30)
+        self.nameTextbox.setFont(QtGui.QFont('Laksaman', 15))
+        self.nameTextbox.move(160, 30)
 
         # self.passTextbox = QLineEdit(self)
         # self.passTextbox.move(150, 70)
@@ -48,12 +65,13 @@ class Window(QWidget):
         self.dropdown.addItem("Extra Visit 3")
         self.dropdown.addItem("Extra Visit 4")
         self.dropdown.addItem("Extra Visit 5")
-        self.dropdown.move(150, 70)
+        self.dropdown.setFont(QtGui.QFont('Laksaman', 15))
+        self.dropdown.move(150, 75)
 
         # push button to browse file
         # self.pushButton = QPushButton("Browse File", self)
         # self.pushButton.move(150, 100)
-        # self.excel_path = ''
+        self.excel_path = ''
         # self.pushButton.clicked.connect(self.pushButton_handler)
 
         # self.select_image_label = QLabel(self)
@@ -61,22 +79,30 @@ class Window(QWidget):
         # self.select_image_label.setText("Choose Image")
         # self.select_image_label.move(30, 50)
 
-        self.image_path = QLineEdit(self)
+        # for textfeild after push button
+        # self.image_path = QLineEdit(self)
+        # self.image_path.setObjectName("path_text")
+        # self.image_path.move(150, 105)
+
+        self.image_path = QLabel(self)
         self.image_path.setObjectName("path_text")
-        self.image_path.move(150, 105)
+        self.image_path.move(250, 120)
 
         self.browse_button = QPushButton(self)
-        self.browse_button.setText("...")
+
+        self.browse_button.setText("Browse")
         self.browse_button.setObjectName("browse_button")
         self.browse_button.clicked.connect(self.pushButton_handler)
-        self.browse_button.move(240, 125)
+        #self.browse_button.move(240, 125)
+        self.browse_button.setFont(QtGui.QFont('Helvetica', 15))
+        self.browse_button.move(150, 120)
 
 
         # push button to upload to redcap
         self.button = QPushButton("Upload to REDCap", self)
-        self.button.move(90, 150)
-
-        self.openedwin = []
+        self.button.setFont(QtGui.QFont('Helvetica', 15))
+        self.button.move(90, 180)
+        #self.openedwin = []
         self.button.clicked.connect(self.save)
 
         self.show()
@@ -103,8 +129,10 @@ class Window(QWidget):
 
 
         if fileName:
-            print("lala", fileName)
+            print("filename is", fileName)
+            self.image_path.setWordWrap(True)
             self.image_path.setText(fileName)
+            self.image_path.adjustSize()
         return fileName
 
 
@@ -187,7 +215,10 @@ class Window(QWidget):
                     else:
                         print('The Excel file is in good format')
                         # Importing to REDCap
-                        redcap_key_file = open("~/REDCAP_API_KEY.txt", "r")
+                        #current_working_dir = os.getcwd()
+                        #redcap_key_dir = os.path.join(current_working_dir,"build/InterviewUploader-0.1.app/Contents/MacOS/REDCAP_API_KEY.txt")
+
+                        redcap_key_file = open('/Applications/InterviewUploader-0.1.app/Contents/Resources/REDCAP_API_KEY.txt', "r")
                         redcap_key_file.seek(0, 0)
                         redcap_key = redcap_key_file.read().replace('\n', '')
                         proj = redcap.Project('https://redcap.vanderbilt.edu/api/', redcap_key)
@@ -199,14 +230,15 @@ class Window(QWidget):
                             print('Check if the file exsits in REDCap')
                             proj.export_file(record=str(participant_id), field='upload', event=str(visit))
                             print('File exists on REDCap')
-                            self.msg_warn = QMessageBox()
-                            self.msg_warn.setIcon(QMessageBox.Warning)
-                            self.msg_warn.setText("Warning")
+                            # self.msg_warn = QMessageBox()
+                            # self.msg_warn.setIcon(QMessageBox.Critical)
+                            # self.msg_warn.setText("Warning")
                             self.msg.setInformativeText('Excel file already exists for this visit. Try a new SubjectID')
                             self.msg.setWindowTitle("Warning")
                             self.msg.exec_()
 
-                        except requests.HTTPError:
+                        #except requests.HTTPError:
+                        except redcap.RedcapError:
                             print('Excel not in redcap')
                             # import record first
                             to_import = [{'subject_id': str(participant_id), 'redcap_event_name': str(visit),
@@ -237,5 +269,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
